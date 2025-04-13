@@ -16,14 +16,14 @@ export class UsersService {
         } catch (e: unknown) {
             if (e instanceof PrismaClientKnownRequestError) {
                 if (e.code === 'P2002') {
-                    return this.prisma.user.findUnique({
-                        where: { username: data.username },
-                    });
+                    return this.getUserByUsernam(data.username);
                 }
             }
-
             throw new InternalServerErrorException('Something went wrong');
         }
     }
 
+    async getUserByUsernam(username: string) {
+        return this.prisma.user.findUnique({ where: { username } });
+    }
 }
