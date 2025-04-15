@@ -42,7 +42,7 @@ export class ChatWebsocketGateway implements OnGatewayConnection, OnGatewayDisco
         this.server.emit('user-left', client.id);
     }
 
-    @SubscribeMessage('message')
+    @SubscribeMessage('sendPersonalMessage')
     async handlerMessages(
         @ConnectedSocket() client: Socket,
         @MessageBody(new StringToJsonPipe(ChatMessageDto)) data: ChatMessageDto
@@ -58,6 +58,5 @@ export class ChatWebsocketGateway implements OnGatewayConnection, OnGatewayDisco
             client.emit('createPersonalMessage', 'Failed to send message');
         }
         console.log(`Message from ${client.id}:`, message);
-        this.server.emit('eventMessage', message);
     }
 }

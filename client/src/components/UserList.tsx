@@ -14,6 +14,7 @@ const UserList = ({ user, setReceiver }: UserListProps) => {
     const [error, setError] = useState<string | null>(null);
 
     const handleChatUsername = (user: User) => {
+        setReceiver(null);
         setReceiver(user);
     };
 

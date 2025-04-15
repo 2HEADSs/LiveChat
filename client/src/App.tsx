@@ -59,13 +59,14 @@ function App() {
                             {/* <ChatRoomList user={user} /> */}
                         </div>
                         <div className="flex items-end justify-end w-full">
-                            {receiver && (
+                            {receiver && socket && (
                                 <Chat
                                     user={user}
                                     receiver={receiver}
                                     setReceiver={
                                         setReceiver
                                     }
+                                    socket={socket}
                                     // setChatRoom={
                                     //     setChatRoom
                                     // }

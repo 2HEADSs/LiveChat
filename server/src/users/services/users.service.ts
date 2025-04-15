@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { UserDto } from '../create-users.dto';
+import { AllMessagesBetweenTwoUsersDto, UserDto } from '../users.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Injectable()
@@ -42,5 +42,18 @@ export class UsersService {
         const user = await this.prisma.user.findUnique({ where: { username } });
         if (!user) throw new Error('User not found');
         return user;
+    }
+
+    async getAllMessageBetweenTwoUsers({ senderId, receiverId }: AllMessagesBetweenTwoUsersDto) {
+        const messages = await this.prisma.message.findMany(
+            {
+                where:
+                {
+                    OR:
+                        [{ senderId, receiverId }, { senderId: receiverId, receiverId: senderId }]
+                }, orderBy: { createdAt: 'asc' }
+            });
+        return messages
+
     }
 }
