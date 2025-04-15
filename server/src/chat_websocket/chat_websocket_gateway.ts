@@ -4,7 +4,8 @@ import { UsersService } from "src/users/services/users.service";
 import { ChatMessageDto } from "./dto's/chatMessage.dto"
 import { ChatsInDbService } from "./services/chats_in_db/chats_in_db.service";
 import { ChatWebsocketFnService } from "./services/chat_websocket_fn/chat_websocket_fn.service";
-
+import { InternalServerErrorException } from "@nestjs/common";
+import { StringToJsonPipe } from "./pipes/string_to_json/string_to_json.pipe";
 @WebSocketGateway(3001, { cors: { origin: '*' } })
 export class ChatWebsocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer() server: Server;
@@ -19,26 +20,19 @@ export class ChatWebsocketGateway implements OnGatewayConnection, OnGatewayDisco
 
     // @SubscribeMessage('connectionMessage')
     async handleConnection(client: Socket,) {
-        const userName = client.handshake.headers["username"];
+        const username = client.handshake.headers["username"];
 
         try {
-            if (userName && typeof userName === "string") {
-                const user = await this.usersService.getUserByUsernam(userName);
-                if (user) {
-                    this.connectedUsers.set(user.id, {
-                        socket: client,
-                        username: user.username,
-                        connectedAt: new Date(),
-                    });
-                }
-            }
+            if (!username || typeof username !== 'string') throw new Error('Invalid username');
+
+            const user = await this.usersService.createUser({ username });
+            this.connectedUsers.set(user.id, { socket: client, username, connectedAt: new Date() });
+            client.emit('user-info', user);
+            this.server.emit('user-joined', `New user connected: ${client.id}`);
+
         } catch (error) {
-            console.warn("Invalid username header");
-            client.disconnect(true);
-            return;
+            throw new InternalServerErrorException('Internal Server Error');
         }
-        console.log("New user connected: ", this.connectedUsers);
-        this.server.emit('user-joined', client.id);
     }
 
 
@@ -51,12 +45,14 @@ export class ChatWebsocketGateway implements OnGatewayConnection, OnGatewayDisco
     @SubscribeMessage('message')
     async handlerMessages(
         @ConnectedSocket() client: Socket,
-        @MessageBody() data: ChatMessageDto,
+        @MessageBody(new StringToJsonPipe(ChatMessageDto)) data: ChatMessageDto
     ) {
+
         const { senderUsername, receiverUsername, message } = data;
         try {
-            await this.chatsInDbService.createPersonalMessage({ senderUsername, receiverUsername, message });
-            this.chatWebsocketFnService.sendPersonalMessage({ server: this.server, client, message });
+            const { senderId, receiverId } = await this.chatsInDbService.createPersonalMessage({ senderUsername, receiverUsername, message });
+
+            this.chatWebsocketFnService.sendPersonalMessage({ server: this.server, client, message, senderId, receiverId });
         } catch (error) {
             console.error('Error saving message:', error);
             client.emit('createPersonalMessage', 'Failed to send message');
