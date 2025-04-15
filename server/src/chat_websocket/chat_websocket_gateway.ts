@@ -1,6 +1,9 @@
 import { ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
 import { UsersService } from "src/users/services/users.service";
+import { ChatMessageDto } from "./dto's/chatMessage.dto"
+import { ChatsInDbService } from "./services/chats_in_db/chats_in_db.service";
+import { ChatWebsocketFnService } from "./services/chat_websocket_fn/chat_websocket_fn.service";
 
 @WebSocketGateway(3001, { cors: { origin: '*' } })
 export class ChatWebsocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -9,6 +12,8 @@ export class ChatWebsocketGateway implements OnGatewayConnection, OnGatewayDisco
     private connectedUsers: Map<string, { socket: Socket, username: string, connectedAt: Date }> = new Map();
     constructor(
         private usersService: UsersService,
+        private chatsInDbService: ChatsInDbService,
+        private chatWebsocketFnService: ChatWebsocketFnService
     ) { }
 
 
@@ -44,10 +49,18 @@ export class ChatWebsocketGateway implements OnGatewayConnection, OnGatewayDisco
     }
 
     @SubscribeMessage('message')
-    handlerMessages(
+    async handlerMessages(
         @ConnectedSocket() client: Socket,
-        @MessageBody() message: string,
+        @MessageBody() data: ChatMessageDto,
     ) {
+        const { senderUsername, receiverUsername, message } = data;
+        try {
+            await this.chatsInDbService.createPersonalMessage({ senderUsername, receiverUsername, message });
+            this.chatWebsocketFnService.sendPersonalMessage({ server: this.server, client, message });
+        } catch (error) {
+            console.error('Error saving message:', error);
+            client.emit('createPersonalMessage', 'Failed to send message');
+        }
         console.log(`Message from ${client.id}:`, message);
         this.server.emit('eventMessage', message);
     }
