@@ -9,13 +9,13 @@ export class UsersControler {
 
     @Get()
     getAllUsers() {
-        return 'Get all users';
+        return this.usersService.getAllUser();
     }
 
     @Post()
-    createOrLoginUser(@Body() data: UserDto) {
+    createUser(@Body() data: UserDto) {
         console.log(data);
-        return this.usersService.createOrLoginUser(data);
+        return this.usersService.createUser(data);
     }
 
 }

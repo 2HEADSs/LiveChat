@@ -8,22 +8,39 @@ export class UsersService {
 
     constructor(private prisma: PrismaService) { }
     async getAllUser() {
-        return this.prisma.user.findMany();
-    }
-    async createOrLoginUser(data: UserDto) {
         try {
-            return this.prisma.user.create({ data });
-        } catch (e: unknown) {
-            if (e instanceof PrismaClientKnownRequestError) {
-                if (e.code === 'P2002') {
-                    return this.getUserByUsernam(data.username);
-                }
-            }
-            throw new InternalServerErrorException('Something went wrong');
+            return this.prisma.user.findMany();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to retrieve users');
         }
     }
+    async createUser(data: UserDto): Promise<{
+        id: string;
+        username: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+    }> {
+        try {
+            const user = await this.prisma.user.create({ data });
+            if (!user) {
+                throw new Error("Failed to create user");
+            }
+            return user;
+        } catch (error: PrismaClientKnownRequestError | any) {
+            if (error instanceof PrismaClientKnownRequestError) {
+                if (error.code === "P2002") {
+                    return this.getUserByUsername(data.username)
+                }
+                throw new Error("Failed to create user");
+            }
+            throw new Error("Failed to create user");
+        }
 
-    async getUserByUsernam(username: string) {
-        return this.prisma.user.findUnique({ where: { username } });
+    }
+    async getUserByUsername(username: string) {
+        const user = await this.prisma.user.findUnique({ where: { username } });
+        if (!user) throw new Error('User not found');
+        return user;
     }
 }
