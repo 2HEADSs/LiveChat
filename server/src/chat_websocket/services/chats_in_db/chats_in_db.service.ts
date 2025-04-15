@@ -17,12 +17,13 @@ export class ChatsInDbService {
         if (!sender || !receiver) {
             throw new Error("User not found");
         }
-        return this.prisma.message.create({
+        await this.prisma.message.create({
             data: {
                 senderId: sender.id,
                 receiverId: receiver.id,
                 content: message
             },
         })
+        return { senderId: sender.id, receiverId: receiver.id };
     }
 }
