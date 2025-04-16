@@ -11,7 +11,7 @@ type MessageResponse = {
     content: string;
     senderId: string;
     receiverId: string;
-    createdAt: string;
+    createdAt: Date;
     chatRoomId: string | null;
 }
 

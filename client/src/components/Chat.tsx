@@ -1,17 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     LoginResponse,
     MessageResponse,
 } from '../types/responseTypes';
-import { User } from '../hooks/useGetUsers';
 import { Socket } from 'socket.io-client';
 import { usePersonalMessagesWebSocket } from '../hooks/usePersonalMessagesWebSocket';
+import { usePersonalMessagesHistory } from '../hooks/usePersonalMessagesHistory';
 
 type ChatProps = {
     user: LoginResponse;
-    receiver: User;
+    receiver: LoginResponse;
     setReceiver: React.Dispatch<
-        React.SetStateAction<User | null>
+        React.SetStateAction<LoginResponse | null>
     >;
     socket: Socket;
 };
@@ -24,34 +24,19 @@ const Chat = ({
 }: ChatProps) => {
     const [currentMessage, setCurrentMessage] =
         useState('');
-    const [messages, setMessages] = useState<
-        MessageResponse[]
-    >([]);
+    const { messages, setMessages } =
+        usePersonalMessagesHistory(user, receiver);
+    const bottomRef = useRef<HTMLDivElement | null>(null);
+    const [newMessage,setNewMessage]=useState();
 
     useEffect(() => {
-        const allMessages = fetch(
-            `http://localhost:3000/users/personalMessages?senderId=${user.id}&receiverId=${receiver.id}`
-        )
-            .then((res) => {
-                if (!res.ok) {
-                    throw new Error(
-                        'Failed to fetch messages'
-                    );
-                }
-                return res.json();
-            })
-            .then((data) => {
-                console.log('Fetched messages:', data);
-                setMessages(data);
-            })
-            .catch((err) => {
-                console.error(
-                    'Error fetching messages:',
-                    err
-                );
-            });
-        console.log(allMessages);
-    }, [receiver?.id]);
+        bottomRef.current?.scrollIntoView({
+            behavior: 'smooth',
+        });
+    }, [messages]);
+
+    usePersonalMessagesWebSocket({ socket, setMessages });
+
     const closeChatHandler = () => {
         setReceiver(null);
         setMessages([]);
@@ -63,9 +48,8 @@ const Chat = ({
             senderUsername: user.username,
             receiverUsername: receiver.username,
             message: currentMessage,
-            socket,
         };
-        usePersonalMessagesWebSocket({ ...payload });
+        socket.emit('sendPersonalMessage', { ...payload });
         setCurrentMessage('');
     };
     return (
@@ -115,8 +99,10 @@ const Chat = ({
                                 </p>
                             </div>
                         )} */}
+                    <div ref={bottomRef}></div>
                 </div>
             </div>
+
             <div className="p-2 w-full rounded-lg">
                 <input
                     className="border w-full p-1"

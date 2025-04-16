@@ -50,9 +50,9 @@ export class ChatWebsocketGateway implements OnGatewayConnection, OnGatewayDisco
 
         const { senderUsername, receiverUsername, message } = data;
         try {
-            const { senderId, receiverId } = await this.chatsInDbService.createPersonalMessage({ senderUsername, receiverUsername, message });
+            const messageData = await this.chatsInDbService.createPersonalMessage({ senderUsername, receiverUsername, message });
 
-            this.chatWebsocketFnService.sendPersonalMessage({ server: this.server, client, message, senderId, receiverId, connectedUsers: this.connectedUsers });
+            this.chatWebsocketFnService.sendPersonalMessage({ messageData, connectedUsers: this.connectedUsers });
         } catch (error) {
             console.error('Error saving message:', error);
             client.emit('createPersonalMessage', 'Failed to send message');

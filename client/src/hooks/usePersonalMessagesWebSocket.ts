@@ -1,13 +1,21 @@
 import { Socket } from "socket.io-client";
+import { useEffect } from "react";
+import { MessageResponse } from "../types/responseTypes";
 type PersonalMessageWebsocket = {
-    senderUsername: string;
-    receiverUsername: string;
-    message: string;
+    setMessages: React.Dispatch<React.SetStateAction<MessageResponse[]>>;
     socket: Socket;
 }
 
 
 export const usePersonalMessagesWebSocket = (
-    {senderUsername, receiverUsername, message, socket}: PersonalMessageWebsocket) => {
-    socket.emit('sendPersonalMessage', { senderUsername, receiverUsername, message });
+    { socket, setMessages }: PersonalMessageWebsocket) => {
+    useEffect(() => {
+        const handler = (data: MessageResponse) => {
+            setMessages((prevMessages) => [...prevMessages, data]);
+        }
+        socket.on('receivedPersonalMessage', handler);
+        return () => {
+            socket.off('receivedPersonalMessage', handler);
+        }
+    }, [socket])
 }
