@@ -75,7 +75,7 @@ export class UsersService {
 
     async createChatRoomService(data: ChatRoomDto) {
         const newChatRoom = await this.prisma.chatRoom.create(
-            { data: { name: data.roomName, ownerId: data.ownerId } }
+            { data: { name: data.roomName, ownerId: data.ownerId, users: { connect: { id: data.ownerId } } } }
         );
 
         return newChatRoom;
@@ -83,5 +83,12 @@ export class UsersService {
 
     async getAllChatRooms() {
         return await this.prisma.chatRoom.findMany({ include: { users: true } });
+    }
+    async getAllChatRoomsWithUser(userId: string) {
+        const allChats = await this.prisma.user.findUnique(
+            { where: { id: userId }, include: { chatRooms: { select: { id: true, name: true, createdAt: true } } } }
+        );
+        console.log(allChats);
+        return allChats;
     }
 }

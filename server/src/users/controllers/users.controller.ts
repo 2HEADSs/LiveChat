@@ -1,4 +1,4 @@
-import { Body, Controller, Get, InternalServerErrorException, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, InternalServerErrorException, Param, Post, Query } from '@nestjs/common';
 import { UsersService } from '../services/users.service';
 import { AllMessagesBetweenTwoUsersDto, ChatRoomDto, UserDto } from '../users.dto';
 
@@ -29,7 +29,7 @@ export class UsersControler {
     @Post('createChatRoom')
     async createChatRoom(@Body() data: ChatRoomDto) {
         try {
-            console.log(data,"createChatRoom");
+            console.log(data, "createChatRoom");
             return await this.usersService.createChatRoomService(data)
         } catch (error) {
             throw new InternalServerErrorException('Internal Server Error');
@@ -37,7 +37,7 @@ export class UsersControler {
         }
     }
 
-    @Get('chatRooms')	
+    @Get('chatRooms')
     async getAllChatRooms() {
         try {
             return await this.usersService.getAllChatRooms();
@@ -45,4 +45,14 @@ export class UsersControler {
             throw new InternalServerErrorException('Internal Server Error');
         }
 
+    }
+    @Get(':userId/chatRooms')
+    async getAllChatRoomsWithUser(@Param('userId') userId: string) {
+        try {
+            return await this.usersService.getAllChatRoomsWithUser(userId);
+        } catch (error) {
+            throw new InternalServerErrorException('Internal Server Error');
+        }
+
+    }
 }
