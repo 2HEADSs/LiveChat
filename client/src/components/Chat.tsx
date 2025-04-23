@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-    LoginResponse,
-    MessageResponse,
-} from '../types/responseTypes';
+import { LoginResponse } from '../types/responseTypes';
 import { Socket } from 'socket.io-client';
 import { usePersonalMessagesWebSocket } from '../hooks/usePersonalMessagesWebSocket';
 import { usePersonalMessagesHistory } from '../hooks/usePersonalMessagesHistory';
@@ -27,7 +24,6 @@ const Chat = ({
     const { messages, setMessages } =
         usePersonalMessagesHistory(user, receiver);
     const bottomRef = useRef<HTMLDivElement | null>(null);
-    const [newMessage,setNewMessage]=useState();
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({
