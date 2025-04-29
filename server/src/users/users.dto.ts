@@ -16,3 +16,15 @@ export class AllMessagesBetweenTwoUsersDto {
     @IsString()
     receiverId: string;
 }
+
+export class ChatRoomDto {
+    @IsNotEmpty()
+    @IsString()
+    ownerId: string;
+    @IsNotEmpty()
+    @IsString()
+    username: string;
+    @IsNotEmpty()
+    @IsString()
+    roomName: string;
+}

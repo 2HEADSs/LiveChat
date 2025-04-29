@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AllMessagesBetweenTwoUsersDto, UserDto } from '../users.dto';
+import { AllMessagesBetweenTwoUsersDto, ChatRoomDto, UserDto } from '../users.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Injectable()
@@ -22,11 +22,12 @@ export class UsersService {
         deletedAt: Date | null;
     }> {
         try {
+
             const user = await this.prisma.user.create({ data });
             if (!user) {
                 throw new Error("Failed to create user");
             }
-            return user;
+            return this.getUserByUsername(user.username)
         } catch (error: PrismaClientKnownRequestError | any) {
             if (error instanceof PrismaClientKnownRequestError) {
                 if (error.code === "P2002") {
@@ -39,7 +40,23 @@ export class UsersService {
 
     }
     async getUserByUsername(username: string) {
-        const user = await this.prisma.user.findUnique({ where: { username } });
+        const user = await this.prisma.user.findUnique({
+            where: { username },
+            include: {
+                invitedTo: {
+                    include: {
+                        chatRoom: true,
+                        inviter: true,
+                    },
+                },
+                invitedBy: {
+                    include: {
+                        chatRoom: true,
+                        invitee: true,
+                    },
+                },
+            },
+        });
         if (!user) throw new Error('User not found');
         return user;
     }
@@ -54,6 +71,24 @@ export class UsersService {
                 }, orderBy: { createdAt: 'asc' }
             });
         return messages
+    }
 
+    async createChatRoomService(data: ChatRoomDto) {
+        const newChatRoom = await this.prisma.chatRoom.create(
+            { data: { name: data.roomName, ownerId: data.ownerId, users: { connect: { id: data.ownerId } } } }
+        );
+
+        return newChatRoom;
+    }
+
+    async getAllChatRooms() {
+        return await this.prisma.chatRoom.findMany({ include: { users: true } });
+    }
+    async getAllChatRoomsWithUser(userId: string) {
+        const allChats = await this.prisma.user.findUnique(
+            { where: { id: userId }, include: { chatRooms: { select: { id: true, name: true, createdAt: true } } } }
+        );
+        console.log(allChats);
+        return allChats;
     }
 }
